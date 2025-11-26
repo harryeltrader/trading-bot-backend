@@ -15,11 +15,17 @@ router = APIRouter()
 @router.post('/upload-trades')
 async def upload_trades_file(file: UploadFile = File(...)):
     """
-    Subir archivo CSV de operaciones MT5.
+    Subir archivo CSV o XLSX de operaciones MT5.
     
     Returns: {success, trades_count, file_path}
     """
     try:
+        # Validar extensión
+        allowed_extensions = {'.csv', '.xlsx', '.xls'}
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        if file_ext not in allowed_extensions:
+            raise HTTPException(status_code=400, detail=f"Formato no soportado. Use: {', '.join(allowed_extensions)}")
+        
         # Guardar archivo
         upload_dir = "data/raw"
         os.makedirs(upload_dir, exist_ok=True)
@@ -30,7 +36,7 @@ async def upload_trades_file(file: UploadFile = File(...)):
             f.write(content)
         
         # Parsear
-        trades = TradeParserService.load_trades_from_csv(file_path)
+        trades = TradeParserService.load_trades_from_file(file_path)
         
         return {
             'success': True,
@@ -60,17 +66,17 @@ async def get_trades(
     - offset: Paginación
     """
     try:
-        # Buscar archivo CSV en data/raw
+        # Buscar archivos en data/raw
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV. Por favor sube un archivo primero.")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos. Por favor sube un archivo primero.")
         
         # Usar el archivo más reciente
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         
         # Filtrar
         if symbol:
@@ -101,17 +107,17 @@ async def get_analytics_summary():
     - Series temporales
     """
     try:
-        # Buscar archivo CSV en data/raw
+        # Buscar archivos en data/raw
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV. Por favor sube un archivo primero.")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos. Por favor sube un archivo primero.")
         
         # Usar el archivo más reciente
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         TradeParserService.validate_trade_data(trades)
         analytics = AnalyticsService.calculate_all_analytics(trades)
         return analytics
@@ -136,16 +142,16 @@ async def filter_trades(
     GET /api/v1/analytics/filter?symbol=EURUSD&status=GANADOR&min_profit=100
     """
     try:
-        # Buscar archivo CSV en data/raw
+        # Buscar archivos en data/raw
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         df = pd.DataFrame([t.model_dump() for t in trades])
         
         if symbol:
@@ -192,14 +198,14 @@ async def get_timeseries(
     """
     try:
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         analytics = AnalyticsService.calculate_all_analytics(trades)
         
         return {
@@ -220,14 +226,14 @@ async def get_symbol_stats():
     """
     try:
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         analytics = AnalyticsService.calculate_all_analytics(trades)
         
         return {
@@ -246,14 +252,14 @@ async def get_hourly_heatmap():
     """
     try:
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         df = pd.DataFrame([t.model_dump() for t in trades])
         df['open_time'] = pd.to_datetime(df['open_time'])
         df['hour'] = df['open_time'].dt.hour
@@ -292,14 +298,14 @@ async def get_daily_stats():
     """
     try:
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         analytics = AnalyticsService.calculate_all_analytics(trades)
         
         return {
@@ -317,14 +323,14 @@ async def get_monthly_stats():
     """
     try:
         raw_dir = "data/raw"
-        csv_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+        data_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
         
-        if not csv_files:
-            raise HTTPException(status_code=404, detail="No se encontraron archivos CSV")
+        if not data_files:
+            raise HTTPException(status_code=404, detail="No se encontraron archivos")
         
-        latest_file = max([os.path.join(raw_dir, f) for f in csv_files], key=os.path.getmtime)
+        latest_file = max([os.path.join(raw_dir, f) for f in data_files], key=os.path.getmtime)
         
-        trades = TradeParserService.load_trades_from_csv(latest_file)
+        trades = TradeParserService.load_trades_from_file(latest_file)
         analytics = AnalyticsService.calculate_all_analytics(trades)
         
         return {
