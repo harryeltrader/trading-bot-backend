@@ -1,250 +1,212 @@
-# Trading Bot Backend - FastAPI + MT5
+# 🚀 Trading Portfolio Analytics Backend
 
-Production-ready backend architecture for algorithmic trading with MetaTrader 5 and CCXT integration. Fully structured with professional code organization, WebSocket real-time updates, strategy management, and comprehensive REST API endpoints.
+Sistema profesional de análisis de operaciones de trading similar a MyFxBook. Backend construido con FastAPI para procesar datos históricos de MT5 y calcular métricas analíticas avanzadas.
 
-## Project Structure
+## 📋 Características
+
+### Análisis Profesional de Trading
+- ✅ **KPIs Completos**: Win rate, Profit Factor, Payoff Ratio, Drawdown
+- ✅ **Análisis por Símbolo**: Estadísticas desglosadas por par (EURUSD, GBPUSD, etc)
+- ✅ **Series Temporales**: Curva de capital, profit diario/mensual
+- ✅ **Análisis de Rachas**: Mayor racha ganadora/perdedora
+- ✅ **Heatmaps**: Rentabilidad por hora del día
+- ✅ **Distribuciones**: Histogramas de ganancias y duraciones
+
+### Endpoints API
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/analytics/upload-trades` | Subir CSV de operaciones |
+| GET | `/api/v1/analytics/trades` | Listar todas las operaciones |
+| GET | `/api/v1/analytics/summary` | Resumen KPIs completo |
+| GET | `/api/v1/analytics/filter` | Filtrar operaciones |
+| GET | `/api/v1/analytics/timeseries` | Series temporales |
+| GET | `/api/v1/analytics/by-symbol` | Stats por par |
+| GET | `/api/v1/analytics/hourly-heatmap` | Rentabilidad por hora |
+| GET | `/api/v1/analytics/daily-stats` | Stats diarios |
+| GET | `/api/v1/analytics/monthly-stats` | Stats mensuales |
+
+## 🏗️ Estructura del Proyecto
 
 ```
 trading-bot-backend/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                 # Application entry point
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── config.py              # Environment configuration
-│   │   ├── security.py            # JWT, CORS, middleware
-│   ├── api/
-│   │   ├── v1/
-│   │   │   ├── endpoints/
-│   │   │   │   ├── account.py           # Account info endpoints
-│   │   │   │   ├── rates.py             # OHLCV data endpoints
-│   │   │   │   ├── orders.py            # Order management
-│   │   │   │   ├── positions.py         # Position management
-│   │   │   │   ├── strategies.py        # Strategy control
-│   │   │   │   ├── backtest.py          # Backtesting endpoints
-│   │   │   │   ├── health.py            # Health check
+│   ├── main.py                          # FastAPI app principal
+│   ├── api/v1/endpoints/
+│   │   └── analytics.py                 # Endpoints de analytics
 │   ├── services/
-│   │   ├── mt5service.py         # MT5 connection logic
-│   │   ├── ccxtservice.py        # CCXT integration
-│   │   ├── strategyservice.py    # Strategy orchestration
-│   │   ├── backtestservice.py    # Backtesting logic
-│   ├── models/
-│   │   ├── account.py
-│   │   ├── order.py
-│   │   ├── strategy.py
-│   ├─┐ schemas/
-│   │   ├── account.py           # Pydantic schemas
-│   │   ├── order.py
-│   │   ├─┐ strategy.py
-│   ├── connectors/
-│   │   ├── base.py              # Base broker interface
-│   │   ├── mt5connector.py       # MT5 implementation
-│   │   ├─┐ ccxtconnector.py      # CCXT implementation
-│   ├── indicators/
-│   │   ├── technical.py         # SMA, EMA, RSI, MACD
-│   │   ├─┐ custom.py            # Custom indicators
-│   ├── strategies/
-│   │   ├── basestrategy.py      # Base strategy class
-│   │   ├── smacrossover.py      # SMA crossover strategy
-│   │   ├─┐ rsistrategy.py       # RSI strategy
-│   ├── websocket/
-│   │   ├── handlers.py          # WebSocket handlers
-│   ├── utils/
-│   │   ├── logger.py            # Logging setup
-│   │   ├─┐ helpers.py           # Helper functions
-│   ├── database/
-│   │   ├── database.py          # Database configuration
-│   │   ├─┐ models.py            # ORM models
-│   ├── tests/
-│   │   ├── test_account.py
-│   │   ├── test_orders.py
-│   │   ├─┐ test_strategies.py
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── docker-compose.yml
-├── Dockerfile
-├── run.py
-└── README.md
+│   │   ├── trade_parser_service.py      # Parser CSV
+│   │   └── analytics_service.py         # Cálculo de KPIs
+│   └── schemas/
+│       ├── trade.py                     # Modelo Trade
+│       └── analytics.py                 # Modelo Analytics
+├── data/
+│   ├── raw/                             # CSV originales
+│   │   └── sample_trades.csv            # Datos de ejemplo
+│   ├── processed/                       # Datos procesados
+│   └── cache/                           # KPIs cacheados
+├── tests/
+│   └── test_analytics.py                # Tests
+├── requirements.txt                     # Dependencias
+└── .env.example                         # Variables de entorno
 ```
 
-## Quick Start
+## 🚀 Instalación y Uso
 
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/tu-usuario/trading-bot-backend.git
-cd trading-bot-backend
-```
-
-### 2. Setup Environment
+### 1. Instalar Dependencias
 
 ```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate
-source venv/bin/activate  # MacOS/Linux
-venv\\Scripts\\activate    # Windows
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 2. Configurar Variables de Entorno
 
 ```bash
 cp .env.example .env
+# Editar .env si es necesario
 ```
 
-Edit `.env`:
-
-```
-FASTAPI_ENV=development
-DEBUG=true
-
-# MT5 Configuration
-MT5_LOGIN=123456
-MT5_PASSWORD=your_password
-MT5_SERVER=broker-server
-MT5_TIMEOUT=30
-
-# CCXT Configuration (Optional)
-CCXT_EXCHANGE=binance
-CCXT_API_KEY=your_api_key
-CCXT_API_SECRET=your_api_secret
-
-# Security
-SECRET_KEY=your-super-secret-key-change-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# Database
-DATABASE_URL=sqlite:///./tradingbot.db
-
-# CORS Origins
-CORS_ORIGINS=http://localhost:3000,http://localhost:8080
-```
-
-### 4. Run Server
+### 3. Ejecutar el Servidor
 
 ```bash
-python run.py
-# Or directly:
+# Opción 1: Usando uvicorn directamente
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Opción 2: Usando Python
+python -m app.main
 ```
 
-Access:
-- API: http://localhost:8000
-- Swagger Docs: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### 4. Acceder a la Documentación
 
-## Dependencies
+Una vez iniciado el servidor, accede a:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
 
-**Core Framework:**
-- fastapi==0.104.1
-- uvicorn[standard]==0.24.0
-- pydantic==2.0.0
-- pydantic-settings==2.0.0
+## 📊 Uso del Sistema
 
-**MT5 & Broker Connectivity:**
-- metatrader5==5.0.45
-- ccxt==4.0.0
-- requests==2.31.0
-- websocket-client==1.6.0
-
-**Data Analysis:**
-- pandas==2.0.0
-- numpy==1.24.0
-- ta-lib==0.4.27
-
-**Database:**
-- sqlalchemy==2.0.0
-- psycopg2-binary==2.9.0
-- alembic==1.12.0
-
-**Authentication:**
-- python-jose==3.3.0
-- passlib==1.7.4
-- python-multipart==0.0.6
-
-**WebSocket:**
-- python-socketio==5.9.0
-- python-socketio[asyncio_manager]==5.9.0
-
-**Utilities:**
-- python-dotenv==1.0.0
-- python-dateutil==2.8.2
-- pytz==2023.3
-
-**Testing:**
-- pytest==7.4.0
-- pytest-asyncio==0.21.0
-
-**Development:**
-- black==23.11.0
-- flake8==6.1.0
-- mypy==1.7.0
-
-## API Endpoints (MVP)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/health` | Health check |
-| GET | `/api/v1/account` | Get account info |
-| GET | `/api/v1/positions` | Get open positions |
-| GET | `/api/v1/rates?symbol=EURUSD&timeframe=3600&count=100` | Get OHLCV data |
-| POST | `/api/v1/orders/buy` | Create buy order |
-| POST | `/api/v1/orders/sell` | Create sell order |
-| GET | `/api/v1/strategies` | List strategies |
-| POST | `/api/v1/strategies/start` | Start strategy |
-
-## Architecture Highlights
-
-**Clean Code Structure:**
-- Separation of concerns (services, connectors, models)
-- Dependency injection pattern
-- Type hints throughout
-- Comprehensive error handling
-
-**Real-time Updates:**
-- WebSocket support for live price feeds
-- Event-driven strategy execution
-- Async/await for non-blocking operations
-
-**Professional Features:**
-- JWT authentication
-- CORS configuration
-- Request validation with Pydantic
-- Structured logging
-- Database ORM with SQLAlchemy
-
-**Broker Integration:**
-- MetaTrader 5 connector
-- CCXT for crypto exchanges
-- Pluggable broker interface
-
-## Next Steps
-
-- [ ] Complete order management endpoints
-- [ ] Implement SMA and RSI trading strategies
-- [ ] Add WebSocket real-time price updates
-- [ ] Integrate PostgreSQL database
-- [ ] Add comprehensive unit tests
-- [ ] Complete API documentation
-- [ ] Setup Docker deployment
-
-## GitHub Setup
-
-1. Create empty repository on GitHub: `trading-bot-backend`
-2. Clone this project
-3. Change remote:
+### 1. Subir Archivo CSV de MT5
 
 ```bash
-git remote set-url origin https://github.com/tu-usuario/trading-bot-backend.git
-git push -u origin main
+curl -X POST "http://localhost:8000/api/v1/analytics/upload-trades" \
+  -F "file=@data/raw/sample_trades.csv"
 ```
 
-## License
+O usar la interfaz Swagger en `/docs`
 
-MIT License - Feel free to use and modify for your trading projects.
+### 2. Obtener Resumen Analítico
+
+```bash
+curl "http://localhost:8000/api/v1/analytics/summary"
+```
+
+Respuesta ejemplo:
+```json
+{
+  "total_trades": 150,
+  "winning_trades": 95,
+  "losing_trades": 50,
+  "break_even": 5,
+  "win_rate": 63.33,
+  "profit_factor": 2.15,
+  "total_profit": 15000.50,
+  "max_drawdown": -2500.0,
+  "best_day": "2025-01-15",
+  "equity_curve": [200, 250, 100, ...],
+  "symbol_stats": {
+    "EURUSD": {
+      "trades": 80,
+      "profit": 8500.0,
+      "win_rate": 65.0
+    }
+  }
+}
+```
+
+### 3. Filtrar Operaciones
+
+```bash
+# Por símbolo
+curl "http://localhost:8000/api/v1/analytics/filter?symbol=EURUSD"
+
+# Por estado
+curl "http://localhost:8000/api/v1/analytics/filter?status=GANADOR"
+
+# Combinado
+curl "http://localhost:8000/api/v1/analytics/filter?symbol=EURUSD&status=GANADOR&min_profit=100"
+```
+
+### 4. Obtener Estadísticas por Símbolo
+
+```bash
+curl "http://localhost:8000/api/v1/analytics/by-symbol"
+```
+
+### 5. Heatmap Horario
+
+```bash
+curl "http://localhost:8000/api/v1/analytics/hourly-heatmap"
+```
+
+## 📝 Formato CSV de MT5
+
+El archivo CSV debe contener las siguientes columnas (en español o inglés):
+
+**Español:**
+```
+Hora de apertura, Hora de cierre, Símbolo, Tipo, Volumen, 
+Precio de apertura, Precio de cierre, Ganancias, Comente
+```
+
+**Inglés:**
+```
+Open Time, Close Time, Symbol, Type, Volume, 
+Open Price, Close Price, Profit, Comment
+```
+
+**Ejemplo:**
+```csv
+Open Time,Close Time,Symbol,Type,Volume,Open Price,Close Price,Profit,Comment
+2025-01-15 09:30:00,2025-01-15 10:45:00,EURUSD,BUY,1.0,1.0850,1.0870,200.0,SMA Crossover
+```
+
+## 🧪 Testing
+
+```bash
+# Ejecutar tests
+pytest tests/
+
+# Con coverage
+pytest --cov=app tests/
+```
+
+## 📦 Dependencias Principales
+
+- **FastAPI**: Framework web moderno y rápido
+- **Pandas**: Procesamiento de datos
+- **NumPy**: Cálculos numéricos
+- **Pydantic**: Validación de datos
+- **Uvicorn**: Servidor ASGI
+
+## 🎯 Próximas Características (Fase 2)
+
+- [ ] PostgreSQL + SQLAlchemy ORM
+- [ ] Caching con Redis
+- [ ] WebSocket para updates real-time
+- [ ] Background jobs con Celery
+- [ ] OAuth con MT5 API
+- [ ] Exportación a PDF/Excel
+- [ ] Comparación de estrategias
+- [ ] Machine Learning para patrones
+
+## 📄 Licencia
+
+MIT
+
+## 👨‍💻 Autor
+
+Harry El Trader - Trading Portfolio Analytics System
+
+---
+
+**¿Necesitas ayuda?** Abre un issue o consulta la documentación en `/docs`
